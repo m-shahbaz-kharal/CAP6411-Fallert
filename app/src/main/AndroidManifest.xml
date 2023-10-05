@@ -24,7 +24,7 @@
             android:name=".abc"
             android:exported="false" />
         <activity
-            android:name="com.cap6411.fallert.MainActivity"
+            android:name="com.cap6411.fallert.BaseActivity"
             android:exported="true"
             android:screenOrientation="landscape" >
             <intent-filter>

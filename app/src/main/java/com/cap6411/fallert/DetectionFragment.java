@@ -1,8 +1,6 @@
 package com.cap6411.fallert;
 
 import android.content.Context;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -10,22 +8,26 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.hardware.camera2.CameraCharacteristics;
 import android.os.Bundle;
-import android.util.Size;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.Nullable;
 import androidx.camera.camera2.interop.Camera2CameraInfo;
 import androidx.camera.camera2.interop.ExperimentalCamera2Interop;
 import androidx.camera.core.CameraInfo;
 import androidx.camera.core.CameraSelector;
-import androidx.camera.core.ExperimentalGetImage;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
+
+import android.util.Size;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.common.InputImage;
@@ -39,11 +41,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-@ExperimentalGetImage @ExperimentalCamera2Interop
-public class MainActivity extends AppCompatActivity {
-
+@ExperimentalCamera2Interop public class DetectionFragment extends Fragment {
+    private Context mContext;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
-    int PERMISSION_REQUESTS = 1;
     PreviewView previewView;
     PoseDetectorOptions options = new PoseDetectorOptions.Builder().setDetectorMode(PoseDetectorOptions.STREAM_MODE).build();
     PoseDetector poseDetector = PoseDetection.getClient(options);
@@ -56,35 +56,67 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<Pose> poseArrayList = new ArrayList<>();
     boolean isRunning = false;
 
+    private static final String ARG_PARAM1 = "param1";
+    private static final String ARG_PARAM2 = "param2";
+    private String mParam1;
+    private String mParam2;
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        mContext = context;
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mContext = null;
+    }
+
+    public static DetectionFragment newInstance(String param1, String param2) {
+        DetectionFragment fragment = new DetectionFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_PARAM1, param1);
+        args.putString(ARG_PARAM2, param2);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        if (getArguments() != null) {
+            mParam1 = getArguments().getString(ARG_PARAM1);
+            mParam2 = getArguments().getString(ARG_PARAM2);
+        }
 
-        cameraProviderFuture = ProcessCameraProvider.getInstance(this);
-
-        previewView = findViewById(R.id.previewView);
-        previewView.setScaleType(PreviewView.ScaleType.FIT_CENTER);
-
-        display = findViewById(R.id.displayOverlay);
+        cameraProviderFuture = ProcessCameraProvider.getInstance(mContext);
 
         mPaint.setColor(Color.RED);
         mPaint.setStyle(Paint.Style.FILL_AND_STROKE);
         mPaint.setStrokeWidth(1);
+    }
 
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         cameraProviderFuture.addListener(() -> {
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
                 bindPreview(cameraProvider);
             } catch (Exception ignored) {}
-        },ContextCompat.getMainExecutor(this));
-
-        if (!allPermissionsGranted()) {
-            getRuntimePermissions();
-        }
+        }, ContextCompat.getMainExecutor(mContext));
+        return inflater.inflate(R.layout.fragment_detection, container, false);
     }
 
-    Runnable RunMlkit = () -> poseDetector.process(InputImage.fromBitmap(bitmapArrayList.get(0),0)).addOnSuccessListener(pose -> poseArrayList.add(pose)).addOnFailureListener(e -> {});
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        previewView = view.findViewById(R.id.previewView);
+        previewView.setScaleType(PreviewView.ScaleType.FIT_CENTER);
+
+        display = view.findViewById(R.id.displayOverlay);
+    }
+
     @androidx.camera.camera2.interop.ExperimentalCamera2Interop
     void bindPreview(@NonNull ProcessCameraProvider cameraProvider) {
         Preview preview = new Preview.Builder().setTargetResolution(new Size(640, 360)).build();
@@ -133,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build();
 
-        imageAnalysis.setAnalyzer(ActivityCompat.getMainExecutor(this), imageProxy -> {
+        imageAnalysis.setAnalyzer(ActivityCompat.getMainExecutor(mContext), imageProxy -> {
             Matrix matrix = imageProxy.getImageInfo().getSensorToBufferTransformMatrix();
             ByteBuffer byteBuffer = imageProxy.getImage().getPlanes()[0].getBuffer();
             byteBuffer.rewind();
@@ -175,44 +207,5 @@ public class MainActivity extends AppCompatActivity {
         cameraProvider.bindToLifecycle((LifecycleOwner)this, cameraSelector, imageAnalysis, preview);
     }
 
-
-    private String[] getRequiredPermissions() {
-        try {
-            PackageInfo info =
-                    this.getPackageManager()
-                            .getPackageInfo(this.getPackageName(), PackageManager.GET_PERMISSIONS);
-            String[] ps = info.requestedPermissions;
-            if (ps != null && ps.length > 0) {
-                return ps;
-            } else {
-                return new String[0];
-            }
-        } catch (Exception e) {
-            return new String[0];
-        }
-    }
-
-    private boolean allPermissionsGranted() {
-        for (String permission : getRequiredPermissions()) {
-            if (isPermissionGranted(this, permission)) return false;
-        }
-        return true;
-    }
-
-    private static boolean isPermissionGranted(Context context, String permission) {
-        return ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED;
-    }
-
-    private void getRuntimePermissions() {
-        List<String> allNeededPermissions = new ArrayList<>();
-        for (String permission : getRequiredPermissions()) {
-            if (isPermissionGranted(this, permission)) {
-                allNeededPermissions.add(permission);
-            }
-        }
-
-        if (!allNeededPermissions.isEmpty()) {
-            ActivityCompat.requestPermissions(this, allNeededPermissions.toArray(new String[0]), PERMISSION_REQUESTS);
-        }
-    }
+    Runnable RunMlkit = () -> poseDetector.process(InputImage.fromBitmap(bitmapArrayList.get(0),0)).addOnSuccessListener(pose -> poseArrayList.add(pose)).addOnFailureListener(e -> {});
 }
