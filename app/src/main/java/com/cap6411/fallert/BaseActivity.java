@@ -29,7 +29,7 @@ public class BaseActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .setReorderingAllowed(true)
-                    .add(R.id.fragment_container_view, DetectionFragment.class, null)
+                    .add(R.id.fragment_container_view, SettingsFragment.class, null)
                     .commit();
         }
     }
