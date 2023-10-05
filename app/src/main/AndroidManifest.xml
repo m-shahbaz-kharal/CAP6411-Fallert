@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" >
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <application
+        android:allowBackup="true"
+        android:banner="@drawable/fallert_icon"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@drawable/fallert_icon"
+        android:label="@string/app_name"
+        android:logo="@drawable/fallert_icon"
+        android:roundIcon="@drawable/fallert_icon"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Fallert"
+        tools:targetApi="31" >
+        <activity
+            android:name=".abc"
+            android:exported="false" />
+        <activity
+            android:name="com.cap6411.fallert.MainActivity"
+            android:exported="true"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
