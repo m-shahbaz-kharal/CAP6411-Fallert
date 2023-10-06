@@ -28,6 +28,7 @@ import android.util.Size;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.common.InputImage;
@@ -41,7 +42,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-@ExperimentalCamera2Interop public class DetectionFragment extends Fragment {
+@ExperimentalCamera2Interop
+public class DetectionFragment extends Fragment implements View.OnClickListener{
     private Context mContext;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     PreviewView previewView;
@@ -56,10 +58,9 @@ import java.util.List;
     ArrayList<Pose> poseArrayList = new ArrayList<>();
     boolean isRunning = false;
 
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-    private String mParam1;
-    private String mParam2;
+    private Button mSettings;
+
+    public DetectionFragment() {}
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -73,23 +74,9 @@ import java.util.List;
         mContext = null;
     }
 
-    public static DetectionFragment newInstance(String param1, String param2) {
-        DetectionFragment fragment = new DetectionFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-
         cameraProviderFuture = ProcessCameraProvider.getInstance(mContext);
 
         mPaint.setColor(Color.RED);
@@ -115,6 +102,16 @@ import java.util.List;
         previewView.setScaleType(PreviewView.ScaleType.FIT_CENTER);
 
         display = view.findViewById(R.id.displayOverlay);
+        mSettings = view.findViewById(R.id.detection_fragment_settings);
+        mSettings.setOnClickListener(this);
+    }
+
+    @Override
+    public void onClick(View v) {
+        if (v.getId() == R.id.detection_fragment_settings) {
+            FragmentChangeListener fc = (FragmentChangeListener)getActivity();
+            fc.replaceFragment(new SettingsFragment());
+        }
     }
 
     @androidx.camera.camera2.interop.ExperimentalCamera2Interop
@@ -189,6 +186,7 @@ import java.util.List;
                 bitmapArrayList.add(bitmap4Save);
                 poseArrayList.clear();
                 isRunning = false;
+
             }
 
             poseArrayList.size();

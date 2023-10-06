@@ -7,7 +7,7 @@
     tools:context="com.cap6411.fallert.BaseActivity">
 
     <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/fragment_container_view"
+        android:id="@+id/base_fragment_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

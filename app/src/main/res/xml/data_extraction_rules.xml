@@ -11,9 +11,9 @@
         -->
     </cloud-backup>
     <!--
-    <device-transfer>
+    <alerteeDevice-transfer>
         <include .../>
         <exclude .../>
-    </device-transfer>
+    </alerteeDevice-transfer>
     -->
 </data-extraction-rules>
