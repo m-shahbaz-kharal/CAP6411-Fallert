@@ -30,7 +30,7 @@ public class BaseActivity extends FragmentActivity implements FragmentChangeList
         }
 
         if (savedInstanceState == null) {
-            replaceFragment(new SettingsFragment());
+            replaceFragment(new DetectionFragment());
         }
     }
 

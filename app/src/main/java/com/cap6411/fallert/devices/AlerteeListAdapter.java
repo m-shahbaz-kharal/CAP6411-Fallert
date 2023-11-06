@@ -8,21 +8,29 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+
 import com.cap6411.fallert.R;
 
 import java.util.ArrayList;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class AlerteeListAdapter extends ArrayAdapter<AlerteeDevice> {
-        private Context mContext;
+        private Context mContext = null;
+        private Consumer<String> mOnDeviceDelete = null;
 
-        public AlerteeListAdapter(Context context, ArrayList<AlerteeDevice> devices) {
+        public AlerteeListAdapter(Context context, ArrayList<AlerteeDevice> devices, Consumer<String> onDeviceDelete) {
             super(context, 0, devices);
             mContext = context;
+            mOnDeviceDelete = onDeviceDelete;
         }
 
-        public View getView(int position, View convertView, ViewGroup parent) {
+        @NonNull
+        public View getView(int position, View convertView, @NonNull ViewGroup parent) {
             // Get the data item for this position
             AlerteeDevice device = getItem(position);
+            if (device == null) return convertView;
             // Check if an existing view is being reused, otherwise inflate the view
             if (convertView == null) {
                 convertView = LayoutInflater.from(mContext).inflate(R.layout.alertee_device, parent, false);
@@ -30,14 +38,13 @@ public class AlerteeListAdapter extends ArrayAdapter<AlerteeDevice> {
             // Lookup view for data population
             TextView mTitle = (TextView) convertView.findViewById(R.id.alertee_device_title);
             TextView mLastIP = (TextView) convertView.findViewById(R.id.alertee_device_last_ip);
-            TextView mMACAddress = (TextView) convertView.findViewById(R.id.alertee_device_last_mac);
             ImageView mDelete = (ImageView) convertView.findViewById(R.id.alertee_device_delete);
             // Populate the data into the template view using the data object
             mTitle.setText(device.mTitle);
             mLastIP.setText(device.mLastIP);
-            mMACAddress.setText(device.mMACAddress);
             mDelete.setOnClickListener(v -> {
                 remove(device);
+                mOnDeviceDelete.accept(device.mLastIP);
                 notifyDataSetChanged();
             });
             // Return the completed view to render on screen
