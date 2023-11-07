@@ -1,6 +1,7 @@
 package com.cap6411.fallert.devices;
 
 import android.content.Context;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,11 +19,13 @@ import java.util.function.Function;
 
 public class AlerteeListAdapter extends ArrayAdapter<AlerteeDevice> {
         private Context mContext = null;
-        private Consumer<String> mOnDeviceDelete = null;
+        private String mServerIP = null;
+        private Consumer<Pair<String, String>> mOnDeviceDelete = null;
 
-        public AlerteeListAdapter(Context context, ArrayList<AlerteeDevice> devices, Consumer<String> onDeviceDelete) {
+        public AlerteeListAdapter(Context context, ArrayList<AlerteeDevice> devices, String serverIP, Consumer<Pair<String, String>> onDeviceDelete) {
             super(context, 0, devices);
             mContext = context;
+            mServerIP = serverIP;
             mOnDeviceDelete = onDeviceDelete;
         }
 
@@ -44,7 +47,7 @@ public class AlerteeListAdapter extends ArrayAdapter<AlerteeDevice> {
             mLastIP.setText(device.mLastIP);
             mDelete.setOnClickListener(v -> {
                 remove(device);
-                mOnDeviceDelete.accept(device.mLastIP);
+                mOnDeviceDelete.accept(new Pair<>(device.mLastIP, mServerIP));
                 notifyDataSetChanged();
             });
             // Return the completed view to render on screen

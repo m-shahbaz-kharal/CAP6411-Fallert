@@ -1,6 +1,7 @@
 package com.cap6411.fallert.devices;
 
 import android.content.Context;
+import android.util.Pair;
 import android.widget.ListView;
 
 import androidx.annotation.NonNull;
@@ -14,9 +15,9 @@ public class AlerteeDevices {
     private List<AlerteeDevice> mDevices;
     private AlerteeListAdapter mAdapter;
 
-    public AlerteeDevices(Context context, ListView listView, Consumer<String> onDeviceDelete) {
+    public AlerteeDevices(Context context, ListView listView, String serverIP, Consumer<Pair<String, String>> onDeviceDelete) {
         mDevices = new ArrayList<>();
-        mAdapter = new AlerteeListAdapter(context, (ArrayList<AlerteeDevice>) mDevices, onDeviceDelete);
+        mAdapter = new AlerteeListAdapter(context, (ArrayList<AlerteeDevice>) mDevices, serverIP, onDeviceDelete);
         listView.setAdapter(mAdapter);
     }
 

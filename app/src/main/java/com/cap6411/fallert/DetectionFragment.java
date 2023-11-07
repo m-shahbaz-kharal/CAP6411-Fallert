@@ -42,6 +42,7 @@ import com.cap6411.fallert.network.FallertEvent;
 import com.cap6411.fallert.network.FallertEventFall;
 import com.cap6411.fallert.network.FallertInformationEvent;
 import com.cap6411.fallert.network.FallertNetworkService;
+import com.cap6411.fallert.network.FallertRemoveDeviceEvent;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.pose.Pose;
@@ -137,9 +138,10 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        String serverIPAddress = getServerIPAddress();
         mFallertNetworkService = new FallertNetworkService(getContext());
 
-        mAlerteeDevices = new AlerteeDevices(mContext, view.findViewById(R.id.alertee_devices_list), mFallertNetworkService::removeClient);
+        mAlerteeDevices = new AlerteeDevices(mContext, view.findViewById(R.id.alertee_devices_list), serverIPAddress, mFallertNetworkService::removeClient);
         mAlerteeDevices.parse(sharedPreferences.getString("client_devices", null));
 
         previewView = view.findViewById(R.id.previewView);
@@ -152,7 +154,6 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
         mSettingsRootView = view.findViewById(R.id.settings_root_view);
         mSettingsServerTitle = view.findViewById(R.id.settings_server_title);
         mSettingsServerTitle.setText(sharedPreferences.getString("server_title", "Room 01"));
-        String serverIPAddress = getServerIPAddress();
         mSettingsServerIPAddress = view.findViewById(R.id.settings_server_ip_address);
         mSettingsServerIPAddress.setText(serverIPAddress);
         Bitmap qr_code = QRCode.from(serverIPAddress).bitmap();
@@ -178,6 +179,12 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
                         FallertInformationEvent infoEvent = (FallertInformationEvent) event;
                         new Handler(mContext.getMainLooper()).post(() -> {
                             mAlerteeDevices.updateDevice(infoEvent.getInformation(), infoEvent.getIPAddress());
+                        });
+                        break;
+                    case REMOVE_DEVICE:
+                        FallertRemoveDeviceEvent removeEvent = (FallertRemoveDeviceEvent) event;
+                        new Handler(mContext.getMainLooper()).post(() -> {
+                            mAlerteeDevices.removeDevice(removeEvent.getIPAddress());
                         });
                         break;
                 }
