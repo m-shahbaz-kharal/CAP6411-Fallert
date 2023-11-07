@@ -8,10 +8,12 @@ import com.cap6411.fallert.devices.AlerteeDevices;
 
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 
 public class FallertNetworkService {
@@ -19,7 +21,7 @@ public class FallertNetworkService {
     public static final int SERVER_BROADCAST_PORT = 3255;
     public static final int SERVER_RECV_PORT = 3256;
     private Thread mServerAcceptClientThread;
-    private Dictionary<String, Socket> mClientSockets = new Hashtable<>();
+    private List<Socket> mClientSockets = new ArrayList<>();
     private Thread mServerSendFallertEventToClientsThread;
     public static Queue<FallertEvent> mServerSendFallertEventQueue = new LinkedList<>();
     private Thread mServerRecvFallertEventFromClientsThread;
@@ -28,17 +30,19 @@ public class FallertNetworkService {
     public FallertNetworkService(Context context){
         mContext = context;
     }
-    public void startServerThread(String ipAddress, AlerteeDevices alerteeDevices) {
+    public void startServerThread(String serverIPAddress, String serverDeviceName, AlerteeDevices alerteeDevices) {
         mServerAcceptClientThread = new Thread(() -> {
-            ServerSocket mSocket = StringNetwork.bindConnection(ipAddress, SERVER_BROADCAST_PORT);
+            ServerSocket mSocket = StringNetwork.bindConnection(serverIPAddress, SERVER_BROADCAST_PORT);
             if (mSocket == null) return;
             try {
                 while (true) {
                     Socket clientSocket = mSocket.accept();
-                    mClientSockets.put("Unknown", clientSocket);
+                    mClientSockets.add(clientSocket);
                     new Handler(mContext.getMainLooper()).post(() -> {
                         alerteeDevices.addDevice("Unknown", clientSocket.getInetAddress().getHostAddress());
                     });
+                    FallertInformationEvent infoEvent = new FallertInformationEvent(String.valueOf(System.currentTimeMillis()), serverIPAddress, serverDeviceName);
+                    FallertNetworkService.mServerSendFallertEventQueue.add(infoEvent);
                 }
             }
             catch (Exception e) {
@@ -67,16 +71,14 @@ public class FallertNetworkService {
                         FallertRemoveDeviceEvent removeEvent = (FallertRemoveDeviceEvent) event;
                         eventString = removeEvent.toString();
                     }
-                    for(Enumeration<String> ips = mClientSockets.keys(); ips.hasMoreElements();) {
-                        String ip = ips.nextElement();
-                        Socket mSocket = mClientSockets.get(ip);
+                    for(Socket mSocket : mClientSockets) {
                         boolean success = StringNetwork.sendString(mSocket, eventString);
-                        if(!success) {
-                            mClientSockets.remove(ip);
-                            new Handler(mContext.getMainLooper()).post(() -> {
-                                alerteeDevices.removeDevice(ip);
-                            });
-                        }
+//                        if(!success) {
+//                            mClientSockets.remove(mSocket);
+//                            new Handler(mContext.getMainLooper()).post(() -> {
+//                                alerteeDevices.removeDevice(mSocket.getInetAddress().getHostAddress());
+//                            });
+//                        }
                     }
                 }
             }
@@ -84,7 +86,7 @@ public class FallertNetworkService {
         mServerSendFallertEventToClientsThread.start();
 
         mServerRecvFallertEventFromClientsThread = new Thread(() -> {
-            ServerSocket mSocket = StringNetwork.bindConnection(ipAddress, SERVER_RECV_PORT);
+            ServerSocket mSocket = StringNetwork.bindConnection(serverIPAddress, SERVER_RECV_PORT);
             if (mSocket == null) return;
             try {
                 while (true) {
@@ -124,13 +126,12 @@ public class FallertNetworkService {
     public void stopServerThread() {
         if (mServerAcceptClientThread != null) mServerAcceptClientThread.interrupt();
         if (mServerSendFallertEventToClientsThread != null) mServerSendFallertEventToClientsThread.interrupt();
-        for(Enumeration<String> ips = mClientSockets.keys(); ips.hasMoreElements();) {
-            String ip = ips.nextElement();
-            StringNetwork.closeConnection(mClientSockets.get(ip));
+        for(Socket mSocket : mClientSockets) {
+            StringNetwork.closeConnection(mSocket);
         }
         if (mServerRecvFallertEventFromClientsThread != null) mServerRecvFallertEventFromClientsThread.interrupt();
 
-        mClientSockets = new Hashtable<>();
+        mClientSockets = new ArrayList<>();
         mServerSendFallertEventQueue.clear();
         mServerRecvFallertEventQueue.clear();
     }

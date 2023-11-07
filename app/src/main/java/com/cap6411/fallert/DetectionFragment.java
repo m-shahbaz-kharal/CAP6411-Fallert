@@ -209,9 +209,7 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
                 mSettingsServerTitle.setEnabled(false);
                 mSettingsSave.setText("Save");
                 String serverIPAddress = getServerIPAddress();
-                mFallertNetworkService.startServerThread(serverIPAddress, mAlerteeDevices);
-                FallertInformationEvent infoEvent = new FallertInformationEvent(String.valueOf(System.currentTimeMillis()), serverIPAddress, sharedPreferences.getString("server_title", "Room 01"));
-                FallertNetworkService.mServerSendFallertEventQueue.add(infoEvent);
+                mFallertNetworkService.startServerThread(serverIPAddress, mSettingsServerTitle.getText().toString(), mAlerteeDevices);
                 startReceivedFallertEventHandler();
             }
             else if(mSettingsSave.getText().equals("Save")) {
