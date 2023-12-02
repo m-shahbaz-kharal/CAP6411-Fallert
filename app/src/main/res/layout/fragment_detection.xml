@@ -83,6 +83,68 @@
                     app:layout_constraintLeft_toLeftOf="@id/qr_code"
                     app:layout_constraintRight_toRightOf="@id/qr_code"
                     app:layout_constraintTop_toBottomOf="@id/qr_code" />
+
+                <Switch
+                    android:id="@+id/mlkit_yolov5pose_toggle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:minWidth="48dp"
+                    android:minHeight="48dp"
+                    app:layout_constraintLeft_toLeftOf="@+id/qr_code"
+                    app:layout_constraintRight_toRightOf="@+id/qr_code"
+                    app:layout_constraintTop_toBottomOf="@id/qr_code" />
+
+                <Switch
+                    android:id="@+id/use_server_validations"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:minWidth="48dp"
+                    android:minHeight="48dp"
+                    app:layout_constraintLeft_toLeftOf="@+id/qr_code"
+                    app:layout_constraintRight_toRightOf="@+id/qr_code"
+                    app:layout_constraintTop_toBottomOf="@id/mlkit_yolov5pose_toggle" />
+
+                <TextView
+                    android:id="@+id/textView2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="16dp"
+                    android:text="MLKit"
+                    app:layout_constraintBottom_toBottomOf="@+id/mlkit_yolov5pose_toggle"
+                    app:layout_constraintRight_toLeftOf="@+id/mlkit_yolov5pose_toggle"
+                    app:layout_constraintTop_toTopOf="@+id/mlkit_yolov5pose_toggle" />
+
+                <TextView
+                    android:id="@+id/textView3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="16dp"
+                    android:text="YoloV5-Pose"
+                    app:layout_constraintBottom_toBottomOf="@+id/mlkit_yolov5pose_toggle"
+                    app:layout_constraintLeft_toRightOf="@+id/mlkit_yolov5pose_toggle"
+                    app:layout_constraintTop_toTopOf="@+id/mlkit_yolov5pose_toggle" />
+
+                <TextView
+                    android:id="@+id/textView4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="16dp"
+                    android:text="Local Validations"
+                    app:layout_constraintBottom_toBottomOf="@+id/use_server_validations"
+                    app:layout_constraintRight_toLeftOf="@+id/use_server_validations"
+                    app:layout_constraintTop_toTopOf="@+id/use_server_validations" />
+
+                <TextView
+                    android:id="@+id/textView5"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="16dp"
+                    android:text="Server Validations"
+                    app:layout_constraintBottom_toBottomOf="@+id/use_server_validations"
+                    app:layout_constraintLeft_toRightOf="@+id/use_server_validations"
+                    app:layout_constraintTop_toTopOf="@+id/use_server_validations" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <View
