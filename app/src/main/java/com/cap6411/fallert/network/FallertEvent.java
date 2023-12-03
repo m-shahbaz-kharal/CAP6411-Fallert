@@ -4,7 +4,8 @@ public class FallertEvent {
     public enum FallertEventType {
         FALL,
         INFORMATION,
-        REMOVE_DEVICE
+        REMOVE_DEVICE,
+        CLOUD_VALIDATION
     }
     private FallertEventType mEventType;
     private String mEventTime;

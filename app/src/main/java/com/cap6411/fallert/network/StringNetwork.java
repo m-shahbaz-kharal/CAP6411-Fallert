@@ -60,7 +60,10 @@ public class StringNetwork {
             inputStream.read(intBytes);
             int string_len = ByteBuffer.wrap(intBytes).getInt();
             byte[] stringBytes = new byte[string_len];
-            int read_bytes = inputStream.read(stringBytes);
+            int read_bytes = 0;
+            for (int i = 0; i < string_len; i += read_bytes) {
+                read_bytes = inputStream.read(stringBytes, i, string_len - i);
+            }
             return new String(stringBytes);
         } catch (Exception e) {
             e.printStackTrace();

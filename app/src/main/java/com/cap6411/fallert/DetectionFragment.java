@@ -27,6 +27,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LifecycleOwner;
 
+import android.os.Debug;
 import android.os.Handler;
 import android.os.SystemClock;
 import android.util.Log;
@@ -40,9 +41,11 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.cap6411.fallert.devices.AlerteeDevices;
 import com.cap6411.fallert.network.FallertEvent;
+import com.cap6411.fallert.network.FallertEventCloudValidation;
 import com.cap6411.fallert.network.FallertEventFall;
 import com.cap6411.fallert.network.FallertInformationEvent;
 import com.cap6411.fallert.network.FallertNetworkService;
@@ -102,6 +105,7 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
     private SharedPreferences sharedPreferences;
     private EditText mSettingsServerTitle;
     private TextView mSettingsServerIPAddress;
+    private EditText mSettingsCloudIPAddress;
     private ImageView mQRCode;
     private Button mSettingsSave;
     private Switch mMLKitYoloV5PoseSwitch;
@@ -191,6 +195,8 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
         Bitmap qr_code = QRCode.from(serverIPAddress).bitmap();
         mQRCode = view.findViewById(R.id.qr_code);
         mQRCode.setImageBitmap(qr_code);
+        mSettingsCloudIPAddress = view.findViewById(R.id.settings_cloud_ip_address);
+        mSettingsCloudIPAddress.setText(sharedPreferences.getString("cloud_ip_address", ""));
         mSettingsSave = view.findViewById(R.id.settings_save);
         mSettingsSave.setOnClickListener(this);
 
@@ -200,9 +206,15 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
             SharedPreferences.Editor editor = sharedPreferences.edit();
             if (isChecked) {
                 editor.putString("pose_detector", "yolov5pose").apply();
+                poseArrayList.clear();
+                yoloV5PoseFallertDetectionArrayList.clear();
+                isRunning = false;
             }
             else {
                 editor.putString("pose_detector", "mlkit").apply();
+                poseArrayList.clear();
+                yoloV5PoseFallertDetectionArrayList.clear();
+                isRunning = false;
             }
         });
         mLocalServerValidationSwitch = view.findViewById(R.id.use_server_validations);
@@ -236,6 +248,15 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
                             mAlerteeDevices.removeDevice(removeEvent.getIPAddress());
                         });
                         break;
+                    case CLOUD_VALIDATION:
+                        FallertEventCloudValidation cloudValidationEvent = (FallertEventCloudValidation) event;
+                        new Handler(mContext.getMainLooper()).post(() -> {
+                            if (cloudValidationEvent.isValidated() && cloudValidationEvent.isFall()) {
+                                FallertEventFall fallEvent = new FallertEventFall(cloudValidationEvent.getEventTime(), sharedPreferences.getString("server_title", "Room 01"), "A person (or multiple) has fallen. Please check.", cloudValidationEvent.getFallImages()[0]);
+                                FallertNetworkService.mServerSendFallertEventQueue.add(fallEvent);
+                            }
+                        });
+                        break;
                 }
             }
         });
@@ -247,6 +268,7 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
         if (v.getId() == R.id.settings_button) {
             mSettingsRootView.setVisibility(View.VISIBLE);
             mSettingsServerTitle.setEnabled(true);
+            mSettingsCloudIPAddress.setEnabled(true);
             mSettingsSave.setText("Start");
             mFallertNetworkService.stopServerThread();
             mRecievedFallertEventHandler.interrupt();
@@ -256,9 +278,19 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
 
             if (mSettingsSave.getText().equals("Start")) {
                 mSettingsServerTitle.setEnabled(false);
+                mSettingsCloudIPAddress.setEnabled(false);
+                mSettingsCloudIPAddress.setText(mSettingsCloudIPAddress.getText().toString().trim());
+                String cloudIPAddress = mSettingsCloudIPAddress.getText().toString();
+                if (cloudIPAddress.split("\\.").length != 4){
+                    mSettingsCloudIPAddress.setText("");
+                    mSettingsCloudIPAddress.setEnabled(true);
+                    Toast.makeText(mContext, "IP address for cloud is not valid.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                editor.putString("cloud_ip_address", cloudIPAddress).apply();
                 mSettingsSave.setText("Save");
                 String serverIPAddress = getServerIPAddress();
-                mFallertNetworkService.startServerThread(serverIPAddress, mSettingsServerTitle.getText().toString(), mAlerteeDevices);
+                mFallertNetworkService.startServerThread(serverIPAddress, mSettingsServerTitle.getText().toString(), mAlerteeDevices, cloudIPAddress);
                 startReceivedFallertEventHandler();
             }
             else if(mSettingsSave.getText().equals("Save")) {
@@ -370,7 +402,19 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
                             mPaint.setColor(Color.RED);
                             String time = String.valueOf(System.currentTimeMillis());
                             FallertEventFall event = new FallertEventFall(time, sharedPreferences.getString("server_title", "Room 01"), "A person (or multiple) has fallen. Please check.", bitmapArrayList.get(0));
-                            FallertNetworkService.mServerSendFallertEventQueue.add(event);
+                            if (sharedPreferences.getBoolean("use_server_validations", false)){
+                                if (bitmapArrayList.size() >= 3) {
+                                    Bitmap bitmap1 = bitmapArrayList.get(bitmapArrayList.size() - 3);
+                                    Bitmap bitmap2 = bitmapArrayList.get(bitmapArrayList.size() - 2);
+                                    Bitmap bitmap3 = bitmapArrayList.get(bitmapArrayList.size() - 1);
+                                    Bitmap[] bitmaps = {bitmap1, bitmap2, bitmap3};
+                                    FallertEventCloudValidation cloudValidationEvent = new FallertEventCloudValidation(time, bitmaps, false, false);
+                                    FallertNetworkService.mServerSendFallertEventQueue.add(cloudValidationEvent);
+                                }
+                            }
+                            else{
+                                FallertNetworkService.mServerSendFallertEventQueue.add(event);
+                            }
                         } else {
                             mPaint.setColor(Color.GREEN);
                         }
@@ -390,7 +434,19 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
                                     mPaint.setColor(Color.RED);
                                     String time = String.valueOf(System.currentTimeMillis());
                                     FallertEventFall event = new FallertEventFall(time, sharedPreferences.getString("server_title", "Room 01"), "A person (or multiple) has fallen. Please check.", bitmapArrayList.get(0));
-                                    FallertNetworkService.mServerSendFallertEventQueue.add(event);
+                                    if (sharedPreferences.getBoolean("use_server_validations", false)){
+                                        if (bitmapArrayList.size() >= 3) {
+                                            Bitmap bitmap1 = bitmapArrayList.get(bitmapArrayList.size() - 3);
+                                            Bitmap bitmap2 = bitmapArrayList.get(bitmapArrayList.size() - 2);
+                                            Bitmap bitmap3 = bitmapArrayList.get(bitmapArrayList.size() - 1);
+                                            Bitmap[] bitmaps = {bitmap1, bitmap2, bitmap3};
+                                            FallertEventCloudValidation cloudValidationEvent = new FallertEventCloudValidation(time, bitmaps, false, false);
+                                            FallertNetworkService.mServerSendFallertEventQueue.add(cloudValidationEvent);
+                                        }
+                                    }
+                                    else{
+                                        FallertNetworkService.mServerSendFallertEventQueue.add(event);
+                                    }
                                 }
                                 else{
                                     mPaint.setColor(Color.GREEN);
@@ -406,8 +462,11 @@ public class DetectionFragment extends Fragment implements View.OnClickListener{
                 bitmap4DisplayArrayList.clear();
                 bitmap4DisplayArrayList.add(bitmapArrayList.get(0));
                 bitmap4Save = bitmapArrayList.get(bitmapArrayList.size()-1);
-                bitmapArrayList.clear();
-                bitmapArrayList.add(bitmap4Save);
+                if (bitmapArrayList.size() >= 3) {
+                    for (int i = 0; i < bitmapArrayList.size() - 3; i++) {
+                        bitmapArrayList.remove(i);
+                    }
+                }
                 poseArrayList.clear();
                 results.clear();
                 fallertDetectionArrayList.clear();

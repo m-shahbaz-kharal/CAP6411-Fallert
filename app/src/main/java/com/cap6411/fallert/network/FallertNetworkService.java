@@ -1,11 +1,14 @@
 package com.cap6411.fallert.network;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.Handler;
+import android.util.Log;
 import android.util.Pair;
 
 import com.cap6411.fallert.devices.AlerteeDevices;
 
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -20,6 +23,8 @@ public class FallertNetworkService {
     private Context mContext;
     public static final int SERVER_BROADCAST_PORT = 3255;
     public static final int SERVER_RECV_PORT = 3256;
+    private String mCloudIPAddress = "";
+    public static final int CLOUD_PORT = 3257;
     private Thread mServerAcceptClientThread;
     private List<Socket> mClientSockets = new ArrayList<>();
     private Thread mServerSendFallertEventToClientsThread;
@@ -30,7 +35,8 @@ public class FallertNetworkService {
     public FallertNetworkService(Context context){
         mContext = context;
     }
-    public void startServerThread(String serverIPAddress, String serverDeviceName, AlerteeDevices alerteeDevices) {
+    public void startServerThread(String serverIPAddress, String serverDeviceName, AlerteeDevices alerteeDevices, String cloudIPAddress) {
+        mCloudIPAddress = cloudIPAddress;
         mServerAcceptClientThread = new Thread(() -> {
             ServerSocket mSocket = StringNetwork.bindConnection(serverIPAddress, SERVER_BROADCAST_PORT);
             if (mSocket == null) return;
@@ -71,14 +77,13 @@ public class FallertNetworkService {
                         FallertRemoveDeviceEvent removeEvent = (FallertRemoveDeviceEvent) event;
                         eventString = removeEvent.toString();
                     }
+                    else if (event.getEventType() == FallertEvent.FallertEventType.CLOUD_VALIDATION){
+                        FallertEventCloudValidation cloudValidationEvent = (FallertEventCloudValidation) event;
+                        validateFallEventOnCloud(cloudValidationEvent);
+                    }
+                    if(eventString == null) continue;
                     for(Socket mSocket : mClientSockets) {
                         boolean success = StringNetwork.sendString(mSocket, eventString);
-//                        if(!success) {
-//                            mClientSockets.remove(mSocket);
-//                            new Handler(mContext.getMainLooper()).post(() -> {
-//                                alerteeDevices.removeDevice(mSocket.getInetAddress().getHostAddress());
-//                            });
-//                        }
                     }
                 }
             }
@@ -134,5 +139,23 @@ public class FallertNetworkService {
         mClientSockets = new ArrayList<>();
         mServerSendFallertEventQueue.clear();
         mServerRecvFallertEventQueue.clear();
+    }
+
+    private void validateFallEventOnCloud(FallertEventCloudValidation event) {
+        Socket cloudClientSocket = new Socket();
+        try {
+            cloudClientSocket.connect(new InetSocketAddress(mCloudIPAddress, CLOUD_PORT), 1000);
+            StringNetwork.sendString(cloudClientSocket, event.toString());
+            String responseString = StringNetwork.receiveString(cloudClientSocket);
+            cloudClientSocket.close();
+            FallertEventCloudValidation responseEvent = FallertEventCloudValidation.parse(responseString);
+            mServerRecvFallertEventQueue.add(responseEvent);
+        } catch (Exception e) {
+            e.printStackTrace();
+            try {
+                StringNetwork.closeConnection(cloudClientSocket);
+            }
+            catch (Exception ignore) {}
+        }
     }
 }

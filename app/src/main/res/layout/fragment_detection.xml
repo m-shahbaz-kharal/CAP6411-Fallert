@@ -71,7 +71,7 @@
                     android:id="@+id/qr_code"
                     android:layout_width="200dp"
                     android:layout_height="200dp"
-                    app:layout_constraintBottom_toBottomOf="parent"
+                    android:layout_marginTop="32dp"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintRight_toRightOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -99,12 +99,30 @@
                     android:id="@+id/use_server_validations"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
                     android:minWidth="48dp"
                     android:minHeight="48dp"
                     app:layout_constraintLeft_toLeftOf="@+id/qr_code"
                     app:layout_constraintRight_toRightOf="@+id/qr_code"
                     app:layout_constraintTop_toBottomOf="@id/mlkit_yolov5pose_toggle" />
+
+                <TextView
+                    android:layout_width="64dp"
+                    android:layout_height="wrap_content"
+                    android:text="Cloud IP:"
+                    app:layout_constraintBottom_toBottomOf="@+id/settings_cloud_ip_address"
+                    app:layout_constraintEnd_toStartOf="@+id/settings_cloud_ip_address"
+                    app:layout_constraintTop_toBottomOf="@+id/use_server_validations" />
+
+                <EditText
+                    android:id="@+id/settings_cloud_ip_address"
+                    android:layout_width="200dp"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:minWidth="48dp"
+                    android:minHeight="48dp"
+                    app:layout_constraintRight_toRightOf="@+id/textView5"
+                    app:layout_constraintLeft_toLeftOf="@+id/textView4"
+                    app:layout_constraintTop_toBottomOf="@+id/use_server_validations" />
 
                 <TextView
                     android:id="@+id/textView2"
